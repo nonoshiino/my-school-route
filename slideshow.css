@@ -12,20 +12,6 @@ input {
   cursor:pointer;
 }
 
-input[type="button"] {
-  -webkit-appearance:none;
-  appearance:none;
-  color:#000;
-  background:#c0c0c0;
-  border:1px solid #000;
-  border-radius:0;
-  padding:0.3em 0.9em;
-}
-
-input[type="button"]:active {
-  background:#999;
-}
-
 html {
   text-align:center;
 }
@@ -86,8 +72,13 @@ img#girl {
 }
 
 #handBtn {
+  -webkit-appearance:none;
+  appearance:none;
+  box-sizing:border-box;
   width:50px;
   height:50px;
+  color:#000;
+  -webkit-text-fill-color:#000;
   background:#c0c0c0;
   border:1px solid #000;
   border-radius:0;
@@ -100,9 +91,14 @@ img#girl {
 
 /* 保存ボタン(文字が切れないよう幅は自動) */
 #saveBtn {
+  -webkit-appearance:none;
+  appearance:none;
+  box-sizing:border-box;
   width:auto;
   height:auto;
   padding:0.5em 1.4em;
+  color:#000;
+  -webkit-text-fill-color:#000;
   background:#c0c0c0;
   border:1px solid #000;
   border-radius:0;
@@ -229,12 +225,20 @@ div.help-box li {
     margin:0.4em;
   }
 
-  /* ボタン類は少し大きめに、ただし過大にならない程度に */
-  input[type="button"]{
-    font-size:1.1em;
-    padding:0.45em 0.8em;
-    min-width:2.2em;
-    min-height:2.2em;
+  /* 上部の矢印・数字ボタン(スマホのみ独自スタイル、横長・コンパクトに) */
+  input[name="prev"],
+  #start,
+  input[name="next"]{
+    -webkit-appearance:none;
+    appearance:none;
+    box-sizing:border-box;
+    color:#000;
+    -webkit-text-fill-color:#000;
+    background:#c0c0c0;
+    border:1px solid #000;
+    border-radius:0;
+    font-size:0.9em;
+    padding:0.25em 0.6em;
   }
 
   /* 縦並びにして横はみ出しを防ぐ */
@@ -260,7 +264,7 @@ div.help-box li {
     writing-mode:horizontal-tb;
     width:88vw;
     max-width:500px;
-    height:9px;
+    height:12px;
   }
 
   #slider::-webkit-slider-thumb{
@@ -270,17 +274,17 @@ div.help-box li {
   }
 
   #handBtn{
-    width:2.6em;
-    height:2.6em;
-    font-size:1.15em;
+    width:2.2em;
+    height:2.2em;
+    font-size:1em;
   }
 
   /* 保存ボタンは固定幅にせず、文字が切れないようにする */
   #saveBtn{
     width:auto;
     height:auto;
-    padding:0.5em 1.2em;
-    font-size:1em;
+    padding:0.4em 1em;
+    font-size:0.9em;
   }
 
   .help-link{
