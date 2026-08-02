@@ -184,10 +184,37 @@ function saveWithGirl(){
         let gh = girlRect.height * scale;
         ctx.drawImage(girlImg, gx, gy, gw, gh);
 
-        let link = document.createElement("a");
-        link.download = "tsuugakuro_" + Count.d(3) + ".jpg";
-        link.href = canvas.toDataURL("image/jpeg", 0.92);
-        link.click();
+        let fileName = "tsuugakuro_" + Count.d(3) + ".jpg";
+
+        canvas.toBlob(function(blob){
+            if(!blob){
+                alert("保存に失敗しました。");
+                return;
+            }
+
+            let file = new File([blob], fileName, { type: "image/jpeg" });
+
+            // iPhoneなどdownload属性が効かない環境では共有シートを使う
+            if(navigator.canShare && navigator.canShare({ files: [file] })){
+                navigator.share({
+                    files: [file],
+                    title: "通学路記録"
+                }).catch(function(err){
+                    // ユーザーがキャンセルした場合などはエラーを無視
+                    if(err && err.name !== "AbortError"){
+                        console.error(err);
+                    }
+                });
+            } else {
+                // PCなど: ダウンロードリンクで保存
+                let url = URL.createObjectURL(blob);
+                let link = document.createElement("a");
+                link.download = fileName;
+                link.href = url;
+                link.click();
+                setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+            }
+        }, "image/jpeg", 0.92);
     } catch(err){
         alert("保存に失敗しました。サーバー経由(http/https)で開いているか確認してください。");
         console.error(err);
@@ -235,7 +262,7 @@ function saveWithGirl(){
         <li>・上部の数字ボタンを押すと自動で画像が切り替わります</li>
         <li>・少女をタップすると「しゃがむ/立つ」の変更ができます</li>
         <li>・「手」ボタンをタップすると「つかみモード」になります、もう一度ボタンを押すとモードが解除できます<br>(このとき少女を長押ししている間は場所を移動させることができます)</li>
-        <li>・お気に入りの風景を見つけたら保存してみましょう</li>
+        <li>・お気に入りの通学路を見つけたら保存してみましょう</li>
     </ul>
 </div>
 
