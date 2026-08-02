@@ -212,9 +212,25 @@ function doSaveWithGirl(){
             }
 
             let url = URL.createObjectURL(blob);
+
+            // タッチ操作が主な端末(スマホ・タブレット)かどうかを判定
+            let isTouchDevice =
+                (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) ||
+                (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
+
+            if(!isTouchDevice){
+                // PC: 共有シートは使わず、そのままダウンロード
+                let link = document.createElement("a");
+                link.download = fileName;
+                link.href = url;
+                link.click();
+                setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+                return;
+            }
+
             let shared = false;
 
-            // 対応していれば共有シート経由で保存(iPhoneのSafariなど)
+            // スマホなど: 対応していれば共有シート経由で保存(iPhoneのSafariなど)
             if(navigator.canShare){
                 try {
                     let file = new File([blob], fileName, { type: "image/jpeg" });
@@ -224,14 +240,17 @@ function doSaveWithGirl(){
                             files: [file],
                             title: "通学路記録"
                         }).catch(function(err){
-                            // ユーザーがキャンセルした場合などはエラーを無視
-                            if(err && err.name !== "AbortError"){
-                                console.error(err);
-                            }
+                            // ユーザーがキャンセルした場合は何もしない
+                            if(err && err.name === "AbortError") return;
+
+                            // 共有できない環境向けの保険
+                            console.error(err);
+                            showResultModal(url, fileName);
                         });
                     }
                 } catch(shareErr){
                     console.error(shareErr);
+                    shared = false;
                 }
             }
 
