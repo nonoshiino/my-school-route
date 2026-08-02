@@ -28,10 +28,14 @@ function toggleGirl(){
     document.getElementById("girl").src = girlToggle ? GIRL_CROUCH : GIRL_STAND;
 }
 
-// 手モード(女の子をドラッグして移動できるモード)
+// 手モード(女の子を長押ししている間だけドラッグして移動できるモード)
 let handMode = false;
 let dragging = false;
 let offsetX = 0, offsetY = 0;
+let pressTimer = null;
+
+// 長押しと判定するまでの時間(ミリ秒)
+const LONG_PRESS_MS = 250;
 
 function toggleHandMode(){
     handMode = !handMode;
@@ -43,14 +47,26 @@ window.addEventListener("DOMContentLoaded", function(){
     let girl = document.getElementById("girl");
     let frame = document.getElementById("koma-frame");
 
-    girl.addEventListener("mousedown", function(e){
+    // マウス・タッチ・ペンをまとめて扱う(Pointer Events)
+    girl.addEventListener("pointerdown", function(e){
         if(!handMode) return;
-        dragging = true;
-        offsetX = e.offsetX;
-        offsetY = e.offsetY;
+        e.preventDefault();
+
+        // すぐには動かさず、一定時間押し続けたらドラッグ開始
+        clearTimeout(pressTimer);
+        pressTimer = setTimeout(function(){
+            dragging = true;
+            let girlRect = girl.getBoundingClientRect();
+            offsetX = e.clientX - girlRect.left;
+            offsetY = e.clientY - girlRect.top;
+            girl.classList.add("dragging");
+        }, LONG_PRESS_MS);
+
+        // 指やマウスが少女の外に出てもイベントを受け取り続ける
+        girl.setPointerCapture(e.pointerId);
     });
 
-    document.addEventListener("mousemove", function(e){
+    girl.addEventListener("pointermove", function(e){
         if(!dragging) return;
         let frameRect = frame.getBoundingClientRect();
         girl.style.left = (e.clientX - frameRect.left - offsetX) + "px";
@@ -58,9 +74,14 @@ window.addEventListener("DOMContentLoaded", function(){
         girl.style.transform = "none";
     });
 
-    document.addEventListener("mouseup", function(){
+    function endPress(){
+        clearTimeout(pressTimer);
         dragging = false;
-    });
+        girl.classList.remove("dragging");
+    }
+
+    girl.addEventListener("pointerup", endPress);
+    girl.addEventListener("pointercancel", endPress);
 });
 
 // 数値を0埋めn桁表示に変換
@@ -110,11 +131,75 @@ function flip(n){
     document.getElementById("slider").value = Count;
     document.getElementById("start").value = Count.d(3);
 }
+
+// koma画像をobject-fit:coverと同じ計算でcanvasに描画する
+function drawCover(ctx, img, destW, destH){
+    let iw = img.naturalWidth, ih = img.naturalHeight;
+    let ir = iw / ih, dr = destW / destH;
+    let sx, sy, sw, sh;
+
+    if(ir > dr){
+        sh = ih;
+        sw = ih * dr;
+        sx = (iw - sw) / 2;
+        sy = 0;
+    } else {
+        sw = iw;
+        sh = iw / dr;
+        sx = 0;
+        sy = (ih - sh) / 2;
+    }
+
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, destW, destH);
+}
+
+// 少女が重なった写真をjpgとして保存する
+function saveWithGirl(){
+    if(!window.confirm("この通学路を保存しますか?")) return;
+
+    let frame = document.getElementById("koma-frame");
+    let komaImg = document.getElementById("koma");
+    let girlImg = document.getElementById("girl");
+
+    let frameRect = frame.getBoundingClientRect();
+    let girlRect = girlImg.getBoundingClientRect();
+
+    // 画質を上げるため、表示サイズの2倍で書き出す
+    let scale = 2;
+    let canvas = document.createElement("canvas");
+    canvas.width = Math.round(frameRect.width * scale);
+    canvas.height = Math.round(frameRect.height * scale);
+
+    let ctx = canvas.getContext("2d");
+
+    try {
+        // 背景の写真
+        drawCover(ctx, komaImg, canvas.width, canvas.height);
+
+        // 女の子(フレーム内の現在位置・サイズをそのまま反映)
+        let gx = (girlRect.left - frameRect.left) * scale;
+        let gy = (girlRect.top  - frameRect.top ) * scale;
+        let gw = girlRect.width  * scale;
+        let gh = girlRect.height * scale;
+        ctx.drawImage(girlImg, gx, gy, gw, gh);
+
+        let link = document.createElement("a");
+        link.download = "tsuugakuro_" + Count.d(3) + ".jpg";
+        link.href = canvas.toDataURL("image/jpeg", 0.92);
+        link.click();
+    } catch(err){
+        alert("保存に失敗しました。サーバー経由(http/https)で開いているか確認してください。");
+        console.error(err);
+    }
+}
 </script>
 
 <body>
 
-<h1>通学路　記録</h1>
+<div class="header-row">
+    <h1>通学路　記録</h1>
+    <a href="#help" class="help-link">遊び方</a>
+</div>
 
 <input type="button" name="prev" value="◀" onclick="flip(-1);">
 <input type="button" id="start" value="start" onclick="Toggle^=1; change();">
@@ -140,6 +225,20 @@ function flip(n){
 
     <!-- 手モード切り替えボタン -->
     <input type="button" id="handBtn" value="手" onclick="toggleHandMode();">
+</div>
+
+<div id="help" class="help-box">
+    <h2>〈遊び方〉</h2>
+    <ul>
+        <li>・上部の「start」ボタンを押すと自動で画像が切り替わります</li>
+        <li>・少女をタップすると「しゃがむ/立つ」の変更ができます</li>
+        <li>・「手」ボタンをタップすると「つかみモード」になります、もう一度ボタンを押すとモードが解除できます<br>(このとき少女を長押ししている間は場所を移動させることができます)</li>
+        <li>・お気に入りの風景を見つけたら保存してみましょう</li>
+    </ul>
+</div>
+
+<div class="save-area">
+    <input type="button" id="saveBtn" value="保存" onclick="saveWithGirl();">
 </div>
 
 </body>

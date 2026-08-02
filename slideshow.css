@@ -65,8 +65,6 @@ img#girl {
   z-index:2;
 }
 
-/* 手モードボタン */
-
 #handBtn {
   width:50px;
   height:50px;
@@ -80,12 +78,35 @@ img#girl {
   background:#666;
 }
 
+/* 保存ボタン(文字が切れないよう幅は自動) */
+#saveBtn {
+  width:auto;
+  height:auto;
+  padding:0.5em 1.4em;
+  background:#c0c0c0;
+  border:1px solid #000;
+  border-radius:0;
+  font-size:0.95em;
+  white-space:nowrap;
+}
+
+#saveBtn:active {
+  background:#999;
+}
+
+div.save-area {
+  margin:1em auto 3em;
+}
+
 /* 手モードのカーソルの形 */
 body.hand-mode img#girl {
   cursor:grab;
+  /* 手モード中はスマホでスクロール等のジェスチャーと衝突しないようにする */
+  touch-action:none;
 }
 
-body.hand-mode img#girl:active {
+body.hand-mode img#girl:active,
+img#girl.dragging {
   cursor:grabbing;
 }
 
@@ -94,6 +115,21 @@ h1 {
   font-size:1.6em;
   font-weight:bolder;
   text-shadow:3px 3px 3px #999;
+}
+
+/* タイトル行(タイトル+遊び方リンク) */
+.header-row {
+  display:flex;
+  align-items:baseline;
+  justify-content:center;
+}
+
+.help-link {
+  margin-left:1em;
+  font-size:0.9em;
+  color:#0645ad;
+  text-decoration:underline;
+  cursor:pointer;
 }
 
 /* ===== スライダー(縦向き・上から下へ) ===== */
@@ -120,4 +156,109 @@ h1 {
   border:1px solid #000;
   border-radius:0;
   cursor:pointer;
+}
+
+/* ===== 遊び方の説明 ===== */
+
+div.help-box {
+  max-width:600px;
+  margin:2em auto 3em;
+  padding:1em 1.5em;
+  text-align:left;
+  background:#f7f7f7;
+  border:1px solid #ccc;
+  box-sizing:border-box;
+}
+
+div.help-box h2 {
+  font-size:1.1em;
+  margin-bottom:0.6em;
+  text-align:center;
+}
+
+div.help-box ul {
+  list-style:none;
+  line-height:1.8;
+}
+
+div.help-box li {
+  margin-bottom:0.4em;
+  font-size:0.95em;
+}
+
+/* ===== スマホ向け調整 ===== */
+@media (max-width:768px){
+
+  h1{
+    font-size:1.3em;
+    margin:0.4em;
+  }
+
+  /* ボタン類を大きく、タップしやすいサイズに */
+  input[type="button"]{
+    font-size:1.3em;
+    padding:0.6em 1em;
+    min-width:2.6em;
+    min-height:2.6em;
+  }
+
+  /* 縦並びにして横はみ出しを防ぐ */
+  div.slideshow-area{
+    flex-direction:column;
+    gap:1em;
+    width:100%;
+    margin:1em auto;
+  }
+
+  div.slide{
+    width:100%;
+    padding:0.5em;
+  }
+
+  div#koma-frame{
+    width:92vw;
+    margin:0 auto 1.5em;
+  }
+
+  /* スライダーは横向きにして画面幅に収める */
+  #slider{
+    writing-mode:horizontal-tb;
+    width:88vw;
+    max-width:500px;
+    height:14px;
+  }
+
+  #slider::-webkit-slider-thumb{
+    width:18px;
+    height:26px;
+  }
+
+  #handBtn{
+    width:3.2em;
+    height:3.2em;
+    font-size:1.4em;
+  }
+
+  /* 保存ボタンは固定幅にせず、文字が切れないようにする */
+  #saveBtn{
+    width:auto;
+    height:auto;
+    padding:0.7em 1.6em;
+    font-size:1.2em;
+  }
+
+  .help-link{
+    font-size:0.8em;
+    margin-left:0.6em;
+  }
+
+  div.help-box{
+    max-width:92vw;
+    margin:1.5em auto 2em;
+    padding:0.8em 1em;
+  }
+
+  div.help-box li{
+    font-size:0.9em;
+  }
 }
