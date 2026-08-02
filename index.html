@@ -154,9 +154,20 @@ function computeCoverRect(iw, ih, dr){
     return { sx: sx, sy: sy, sw: sw, sh: sh };
 }
 
-// 少女が重なった写真をjpgとして保存する
+// 「保存」ボタン: 独自の確認画面を開く
+// (TwitterなどSNS内蔵ブラウザではwindow.confirm()がブロックされ
+//  無反応になることがあるため、ネイティブのconfirmは使わない)
 function saveWithGirl(){
-    if(!window.confirm("この通学路を保存しますか?")) return;
+    document.getElementById("confirmModal").style.display = "flex";
+}
+
+function closeConfirmModal(){
+    document.getElementById("confirmModal").style.display = "none";
+}
+
+// 確認画面で「保存する」が押されたときの処理
+function doSaveWithGirl(){
+    closeConfirmModal();
 
     let frame = document.getElementById("koma-frame");
     let komaImg = document.getElementById("koma");
@@ -196,37 +207,71 @@ function saveWithGirl(){
 
         canvas.toBlob(function(blob){
             if(!blob){
-                alert("保存に失敗しました。");
+                showResultModal(null, fileName);
                 return;
             }
 
-            let file = new File([blob], fileName, { type: "image/jpeg" });
+            let url = URL.createObjectURL(blob);
+            let shared = false;
 
-            // iPhoneなどdownload属性が効かない環境では共有シートを使う
-            if(navigator.canShare && navigator.canShare({ files: [file] })){
-                navigator.share({
-                    files: [file],
-                    title: "通学路記録"
-                }).catch(function(err){
-                    // ユーザーがキャンセルした場合などはエラーを無視
-                    if(err && err.name !== "AbortError"){
-                        console.error(err);
+            // 対応していれば共有シート経由で保存(iPhoneのSafariなど)
+            if(navigator.canShare){
+                try {
+                    let file = new File([blob], fileName, { type: "image/jpeg" });
+                    if(navigator.canShare({ files: [file] })){
+                        shared = true;
+                        navigator.share({
+                            files: [file],
+                            title: "通学路記録"
+                        }).catch(function(err){
+                            // ユーザーがキャンセルした場合などはエラーを無視
+                            if(err && err.name !== "AbortError"){
+                                console.error(err);
+                            }
+                        });
                     }
-                });
-            } else {
-                // PCなど: ダウンロードリンクで保存
-                let url = URL.createObjectURL(blob);
-                let link = document.createElement("a");
-                link.download = fileName;
-                link.href = url;
-                link.click();
-                setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+                } catch(shareErr){
+                    console.error(shareErr);
+                }
+            }
+
+            // 共有シートが使えない環境(Twitterなどアプリ内ブラウザを含む)は
+            // 画像を画面に表示して、長押しで保存してもらう
+            if(!shared){
+                showResultModal(url, fileName);
             }
         }, "image/jpeg", 0.95);
     } catch(err){
-        alert("保存に失敗しました。サーバー経由(http/https)で開いているか確認してください。");
+        showResultModal(null, null);
         console.error(err);
     }
+}
+
+// 保存できなかった/共有シートが使えない場合に、
+// 画像を表示して手動保存してもらうための画面
+function showResultModal(url, fileName){
+    let img = document.getElementById("resultImage");
+    let link = document.getElementById("resultDownloadLink");
+    let note = document.getElementById("resultNote");
+
+    if(url){
+        img.src = url;
+        img.style.display = "block";
+        link.href = url;
+        link.download = fileName || "tsuugakuro.jpg";
+        link.style.display = "inline-block";
+        note.textContent = "画像を長押しして「写真に保存」を選ぶか、下のリンクからダウンロードしてください。";
+    } else {
+        img.style.display = "none";
+        link.style.display = "none";
+        note.textContent = "保存に失敗しました。時間をおいて、もう一度お試しください。";
+    }
+
+    document.getElementById("resultModal").style.display = "flex";
+}
+
+function closeResultModal(){
+    document.getElementById("resultModal").style.display = "none";
 }
 </script>
 
@@ -270,12 +315,36 @@ function saveWithGirl(){
         <li>・上部の数字ボタンを押すと自動で画像が切り替わります</li>
         <li>・少女をタップすると「しゃがむ/立つ」の変更ができます</li>
         <li>・「手」ボタンをタップすると「つかみモード」になります、もう一度ボタンを押すとモードが解除できます<br>(このとき少女を長押ししている間は場所を移動させることができます)</li>
-        <li>・お気に入りの通学路を見つけたら保存してみましょう</li>
+        <li>・お気に入りの風景を見つけたら保存してみましょう</li>
     </ul>
 </div>
 
 <div class="save-area">
     <input type="button" id="saveBtn" value="保存" onclick="saveWithGirl();">
+</div>
+
+<!-- 保存確認画面(独自モーダル。SNS内蔵ブラウザ等でwindow.confirm()が
+     ブロックされることがあるため、ネイティブのconfirmは使わない) -->
+<div id="confirmModal" class="modal-overlay">
+    <div class="modal-box">
+        <p>この通学路を保存しますか?</p>
+        <div class="modal-buttons">
+            <input type="button" value="保存する" onclick="doSaveWithGirl();">
+            <input type="button" value="キャンセル" onclick="closeConfirmModal();">
+        </div>
+    </div>
+</div>
+
+<!-- 保存結果画面(共有シートが使えない場合、長押し保存用に画像を表示) -->
+<div id="resultModal" class="modal-overlay">
+    <div class="modal-box">
+        <p id="resultNote"></p>
+        <img id="resultImage" alt="保存する画像">
+        <div class="modal-buttons">
+            <a id="resultDownloadLink" class="modal-download-link">ダウンロード</a>
+            <input type="button" value="閉じる" onclick="closeResultModal();">
+        </div>
+    </div>
 </div>
 
 </body>
