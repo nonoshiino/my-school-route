@@ -5,6 +5,7 @@
   font-size:100%;
   font-style:normal;
   font-weight:normal;
+  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","Meiryo",sans-serif;
 }
 
 input {
@@ -132,6 +133,12 @@ h1 {
   cursor:pointer;
 }
 
+.help-link-spacer {
+  margin-right:1em;
+  font-size:0.9em;
+  visibility:hidden;
+}
+
 /* ===== スライダー(縦向き・上から下へ) ===== */
 
 #slider{
@@ -250,6 +257,11 @@ div.help-box li {
   .help-link{
     font-size:0.8em;
     margin-left:0.6em;
+  }
+
+  .help-link-spacer{
+    font-size:0.8em;
+    margin-right:0.6em;
   }
 
   div.help-box{
