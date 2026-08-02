@@ -133,10 +133,10 @@ function flip(n){
     document.getElementById("start").value = Count.d(3);
 }
 
-// koma画像をobject-fit:coverと同じ計算でcanvasに描画する
-function drawCover(ctx, img, destW, destH){
-    let iw = img.naturalWidth, ih = img.naturalHeight;
-    let ir = iw / ih, dr = destW / destH;
+// object-fit:coverと同じ考え方で、指定した縦横比に合わせて
+// 元画像から切り出す範囲(元画像の解像度のまま)を計算する
+function computeCoverRect(iw, ih, dr){
+    let ir = iw / ih;
     let sx, sy, sw, sh;
 
     if(ir > dr){
@@ -151,7 +151,7 @@ function drawCover(ctx, img, destW, destH){
         sy = (ih - sh) / 2;
     }
 
-    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, destW, destH);
+    return { sx: sx, sy: sy, sw: sw, sh: sh };
 }
 
 // 少女が重なった写真をjpgとして保存する
@@ -165,17 +165,25 @@ function saveWithGirl(){
     let frameRect = frame.getBoundingClientRect();
     let girlRect = girlImg.getBoundingClientRect();
 
-    // 画質を上げるため、表示サイズの2倍で書き出す
-    let scale = 2;
-    let canvas = document.createElement("canvas");
-    canvas.width = Math.round(frameRect.width * scale);
-    canvas.height = Math.round(frameRect.height * scale);
-
-    let ctx = canvas.getContext("2d");
-
     try {
-        // 背景の写真
-        drawCover(ctx, komaImg, canvas.width, canvas.height);
+        // 表示上のフレームの縦横比に合わせて、元の写真の解像度のまま切り出す範囲を求める
+        let dr = frameRect.width / frameRect.height;
+        let rect = computeCoverRect(komaImg.naturalWidth, komaImg.naturalHeight, dr);
+
+        // 出力キャンバスは元写真の解像度そのまま(縮小拡大しない)
+        let canvas = document.createElement("canvas");
+        canvas.width = Math.round(rect.sw);
+        canvas.height = Math.round(rect.sh);
+
+        let ctx = canvas.getContext("2d");
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+
+        // 背景の写真(元解像度のまま)
+        ctx.drawImage(komaImg, rect.sx, rect.sy, rect.sw, rect.sh, 0, 0, canvas.width, canvas.height);
+
+        // 表示上のフレームサイズ→出力キャンバスサイズへの倍率
+        let scale = canvas.width / frameRect.width;
 
         // 女の子(フレーム内の現在位置・サイズをそのまま反映)
         let gx = (girlRect.left - frameRect.left) * scale;
@@ -214,7 +222,7 @@ function saveWithGirl(){
                 link.click();
                 setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
             }
-        }, "image/jpeg", 0.92);
+        }, "image/jpeg", 0.95);
     } catch(err){
         alert("保存に失敗しました。サーバー経由(http/https)で開いているか確認してください。");
         console.error(err);
